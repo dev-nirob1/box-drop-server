@@ -1,8 +1,9 @@
-const express = require('express');
-const { MongoClient, ServerApiVersion } = require('mongodb');
-const app = express();
 require('dotenv').config();
-import bcrypt from "bcryptjs";
+const express = require('express');
+const bcrypt = require('bcryptjs');
+const { MongoClient, ServerApiVersion } = require('mongodb');
+
+const app = express();
 const PORT = process.env.PORT || 3000;
 app.use(express.json());
 
