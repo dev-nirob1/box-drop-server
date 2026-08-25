@@ -2,6 +2,7 @@ const express = require('express');
 const { MongoClient, ServerApiVersion } = require('mongodb');
 const app = express();
 require('dotenv').config();
+import bcrypt from "bcryptjs";
 const PORT = process.env.PORT || 3000;
 app.use(express.json());
 
@@ -34,7 +35,40 @@ async function server() {
             }
         })
 
+        app.post('/api/users', async (req, res) => {
+            try {
+                const user = req.body;
+                // destructuring body 
+                const { name, phone, password } = user;
+                if (!name || !phone || !password) {
+                    return res.status(400).json({
+                        message: 'Name, phone and password are required'
+                    });
+                }
+                // query for existing user or not
+                const existingUser = await usersCollection.findOne({ phone });
 
+                if (existingUser) {
+                    return res.status(409).json({
+                        message: 'User already exists'
+                    });
+                };
+                // password hashing 
+                const hashedPassword = await bcrypt.hash(password, 10);
+
+                // override body data for safety 
+                const newUser = { name, phone, password: hashedPassword, createdAt: new Date(), role: 'user' };
+
+                // sending response 
+                const result = await usersCollection.insertOne(newUser);
+                res.status(201).json({ message: 'User created successfully', insertedId: result.insertedId });
+
+            } catch (error) {
+                res.status(500).json({
+                    message: error.message,
+                });
+            }
+        })
 
 
         app.get('/', (req, res) => {
