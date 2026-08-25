@@ -3,7 +3,7 @@ const { MongoClient, ServerApiVersion } = require('mongodb');
 const app = express();
 require('dotenv').config();
 const PORT = process.env.PORT || 3000;
-
+app.use(express.json());
 
 const mongodbURI = `mongodb+srv://${process.env.DB_USERNAME}:${process.env.DB_PASSWORD}@cluster0.om5nma1.mongodb.net/?appName=Cluster0`
 
@@ -18,6 +18,25 @@ const client = new MongoClient(mongodbURI, {
 async function server() {
 
     try {
+        await client.connect();
+
+        const db = client.db('box-drop');
+        const usersCollection = db.collection('users');
+
+        app.get('/api/users', async (req, res) => {
+            try {
+                const result = await usersCollection.find({}, { projection: { password: 0 } }).toArray();
+                res.status(200).json(result);
+            } catch (error) {
+                res.status(500).json({
+                    message: error.message
+                })
+            }
+        })
+
+
+
+
         app.get('/', (req, res) => {
             res.send('Hello World')
         })
@@ -25,9 +44,8 @@ async function server() {
 
 
 
-        await client.connect();
         console.log(
-            'Pinged your deployment. You successfully connected to MongoDB!'
+            'Connected to MongoDB!'
         );
 
 
