@@ -1,6 +1,7 @@
 require('dotenv').config();
 const express = require('express');
 const bcrypt = require('bcryptjs');
+const jwt = require("jsonwebtoken");
 const { MongoClient, ServerApiVersion } = require('mongodb');
 
 const app = express();
@@ -35,7 +36,7 @@ async function server() {
                 })
             }
         })
-
+        //create user 
         app.post('/api/users', async (req, res) => {
             try {
                 const user = req.body;
@@ -68,6 +69,47 @@ async function server() {
                 res.status(500).json({
                     message: error.message,
                 });
+            }
+        })
+
+        //login route 
+        app.post('/api/auth/login', async (req, res) => {
+            try {
+                // get body from frontend 
+                const loginData = req.body;
+                // destructure phone and password
+                const { phone, password } = loginData;
+                // check phone and password is empty or not 
+                if (!phone || !password) {
+                    return res.status(400).json({ message: 'Phone number and Password required' })
+                }
+                // check user exists or not
+                const existingUser  = await usersCollection.findOne({ phone })
+                // if not found return with a response message 
+                if (!existingUser ) {
+                    return res.status(401).json({ message: 'Invalid Phone or password' })
+                }
+
+                // compare password 
+                const isValidPassword = await bcrypt.compare(password, existingUser.password);
+                if (!isValidPassword) {
+                    return res.status(401).json({ message: 'Invalid phone number or password' })
+                }
+
+                // generate jwt secret token
+                const token = jwt.sign({ userId: existingUser._id, phone: existingUser.phone, role: existingUser.role }, process.env.JWT_SECRET, { expiresIn: '1h' })
+
+                const userInfo = { name: existingUser.name, phone: existingUser.phone, role: existingUser.role, userId: existingUser._id };
+
+                // set token to cookie 
+                res.cookie('token', token, {
+                    httpOnly: true,
+                    secure: false
+                })
+                res.status(200).json({ message: 'Login successful', user: userInfo })
+
+            } catch (error) {
+                res.status(500).json({ message: error.message })
             }
         })
 
