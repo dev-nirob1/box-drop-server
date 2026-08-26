@@ -58,7 +58,7 @@ async function server() {
                 // password hashing 
                 const hashedPassword = await bcrypt.hash(password, 10);
 
-                // override body data for safety 
+                // override body data for safety  //todo//
                 const newUser = { name, phone, password: hashedPassword, createdAt: new Date(), role: 'user' };
 
                 // sending response 
@@ -130,8 +130,23 @@ async function server() {
                 });
             }
         }
-        
 
+        app.get('/api/auth/me', verifyToken, (req, res) => {
+            const user = req.user;
+
+            res.status(200).json({
+                message: 'User Logged in',
+                user
+            });
+        });
+        app.post('/api/auth/logout', (req, res) => {
+            res.clearCookie('token');
+
+            res.status(200).json({
+                message: 'Logout successful'
+            });
+        });
+        
         app.get('/', (req, res) => {
             res.send('Hello World')
         })
