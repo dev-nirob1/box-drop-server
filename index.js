@@ -3,11 +3,17 @@ const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require("jsonwebtoken");
 const cookieParser = require('cookie-parser');
+const cors = require('cors')
 const { MongoClient, ServerApiVersion } = require('mongodb');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 app.use(express.json());
+
+app.use(cors({
+  origin: "http://localhost:5173",
+  credentials: true,
+}))
 app.use(cookieParser());
 
 const mongodbURI = `mongodb+srv://${process.env.DB_USERNAME}:${process.env.DB_PASSWORD}@cluster0.om5nma1.mongodb.net/?appName=Cluster0`
@@ -108,6 +114,7 @@ async function server() {
             try {
                 // get body from frontend 
                 const loginData = req.body;
+                console.log(req.body)
                 // destructure phone and password
                 const { phone, password } = loginData;
                 // check phone and password is empty or not 
