@@ -84,9 +84,9 @@ async function server() {
                     return res.status(400).json({ message: 'Phone number and Password required' })
                 }
                 // check user exists or not
-                const existingUser  = await usersCollection.findOne({ phone })
+                const existingUser = await usersCollection.findOne({ phone })
                 // if not found return with a response message 
-                if (!existingUser ) {
+                if (!existingUser) {
                     return res.status(401).json({ message: 'Invalid Phone or password' })
                 }
 
@@ -113,6 +113,24 @@ async function server() {
             }
         })
 
+        // verify token middleware 
+        const verifyToken = (req, res, next) => {
+            const token = req.cookies.token;
+            if (!token) {
+                return res.status(401).json({ message: 'Unauthorized access' });
+            };
+
+            try {
+                const decode = jwt.verify(token, process.env.JWT_SECRET);
+                req.user = decode;
+                next()
+            } catch (error) {
+                return res.status(401).json({
+                    message: 'Invalid or expired token'
+                });
+            }
+        }
+        
 
         app.get('/', (req, res) => {
             res.send('Hello World')
