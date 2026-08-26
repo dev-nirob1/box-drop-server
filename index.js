@@ -2,11 +2,13 @@ require('dotenv').config();
 const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require("jsonwebtoken");
+const cookieParser = require('cookie-parser');
 const { MongoClient, ServerApiVersion } = require('mongodb');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 app.use(express.json());
+app.use(cookieParser());
 
 const mongodbURI = `mongodb+srv://${process.env.DB_USERNAME}:${process.env.DB_PASSWORD}@cluster0.om5nma1.mongodb.net/?appName=Cluster0`
 
@@ -26,7 +28,36 @@ async function server() {
         const db = client.db('box-drop');
         const usersCollection = db.collection('users');
 
-        app.get('/api/users', async (req, res) => {
+
+        // verify token middleware 
+        const verifyToken = (req, res, next) => {
+            const token = req.cookies.token;
+            if (!token) {
+                return res.status(401).json({ message: 'Unauthorized access' });
+            };
+
+            try {
+                const decode = jwt.verify(token, process.env.JWT_SECRET);
+                req.user = decode;
+                next()
+            } catch (error) {
+                return res.status(401).json({
+                    message: 'Invalid or expired token'
+                });
+            }
+        }
+        //verfiy admin middleware
+        const verifyAdmin = (req, res, next) => {
+            const role = req.user.role;
+            if (role === 'admin') {
+                next()
+            }
+            else {
+                res.status(403).json({ message: 'Forbidden Access' })
+            }
+        }
+
+        app.get('/api/users', verifyToken, verifyAdmin, async (req, res) => {
             try {
                 const result = await usersCollection.find({}, { projection: { password: 0 } }).toArray();
                 res.status(200).json(result);
@@ -97,9 +128,9 @@ async function server() {
                 }
 
                 // generate jwt secret token
-                const token = jwt.sign({ userId: existingUser._id, phone: existingUser.phone, role: existingUser.role }, process.env.JWT_SECRET, { expiresIn: '1h' })
+                const token = jwt.sign({ userId: existingUser._id.toString(), phone: existingUser.phone, role: existingUser.role }, process.env.JWT_SECRET, { expiresIn: '1h' })
 
-                const userInfo = { name: existingUser.name, phone: existingUser.phone, role: existingUser.role, userId: existingUser._id };
+                const userInfo = { name: existingUser.name, phone: existingUser.phone, role: existingUser.role, userId: existingUser._id.toString() };
 
                 // set token to cookie 
                 res.cookie('token', token, {
@@ -112,24 +143,6 @@ async function server() {
                 res.status(500).json({ message: error.message })
             }
         })
-
-        // verify token middleware 
-        const verifyToken = (req, res, next) => {
-            const token = req.cookies.token;
-            if (!token) {
-                return res.status(401).json({ message: 'Unauthorized access' });
-            };
-
-            try {
-                const decode = jwt.verify(token, process.env.JWT_SECRET);
-                req.user = decode;
-                next()
-            } catch (error) {
-                return res.status(401).json({
-                    message: 'Invalid or expired token'
-                });
-            }
-        }
 
         app.get('/api/auth/me', verifyToken, (req, res) => {
             const user = req.user;
@@ -146,18 +159,18 @@ async function server() {
                 message: 'Logout successful'
             });
         });
-        
+
         app.get('/', (req, res) => {
             res.send('Hello World')
         })
-
-
-
 
         console.log(
             'Connected to MongoDB!'
         );
 
+        app.listen(PORT, () => {
+            console.log(`Server is running on http://localhost:${PORT}`);
+        })
 
 
 
@@ -168,6 +181,3 @@ async function server() {
 }
 server();
 
-app.listen(PORT, () => {
-    console.log(`Server is running on http://localhost:${PORT}`);
-})
