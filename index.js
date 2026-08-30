@@ -4,15 +4,15 @@ const bcrypt = require('bcryptjs');
 const jwt = require("jsonwebtoken");
 const cookieParser = require('cookie-parser');
 const cors = require('cors')
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 app.use(express.json());
 
 app.use(cors({
-  origin: "http://localhost:5173",
-  credentials: true,
+    origin: "http://localhost:5173",
+    credentials: true,
 }))
 app.use(cookieParser());
 
@@ -33,6 +33,7 @@ async function server() {
 
         const db = client.db('box-drop');
         const usersCollection = db.collection('users');
+        const parcelsCollection = db.collection('parcels');
 
 
         // verify token middleware 
@@ -114,15 +115,18 @@ async function server() {
             try {
                 // get body from frontend 
                 const loginData = req.body;
-                console.log(req.body)
+                // console.log(req.body)
                 // destructure phone and password
                 const { phone, password } = loginData;
+
+                // console.log('password', password)
                 // check phone and password is empty or not 
                 if (!phone || !password) {
                     return res.status(400).json({ message: 'Phone number and Password required' })
                 }
                 // check user exists or not
                 const existingUser = await usersCollection.findOne({ phone })
+
                 // if not found return with a response message 
                 if (!existingUser) {
                     return res.status(401).json({ message: 'Invalid Phone or password' })
@@ -130,6 +134,7 @@ async function server() {
 
                 // compare password 
                 const isValidPassword = await bcrypt.compare(password, existingUser.password);
+
                 if (!isValidPassword) {
                     return res.status(401).json({ message: 'Invalid phone number or password' })
                 }
@@ -166,6 +171,26 @@ async function server() {
                 message: 'Logout successful'
             });
         });
+
+
+
+        // parcels route 
+        app.post('/api/parcels', verifyToken, verifyAdmin, async (req, res) => {
+            try {
+                const parcelData = req.body;
+                const result = await parcelsCollection.insertOne({
+                    ...parcelData, trackingId: 'ORD-' + new ObjectId(), status: 'Booked',
+                    bookingDate: new Date()
+                })
+
+                 res.status(200).json({ message: 'Parcel created successfully', parcelId: result.insertedId })
+
+            } catch (error) {
+                res.status(500).json({
+                    message: "Failed to create parcel",
+                });
+            }
+        })
 
         app.get('/', (req, res) => {
             res.send('Hello World')
