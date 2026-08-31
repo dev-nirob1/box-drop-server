@@ -175,6 +175,22 @@ async function server() {
 
 
         // parcels route 
+        // get all parcel 
+        app.get('/api/parcels', verifyToken, verifyAdmin, async (req, res) => {
+            try {
+                const result = await parcelsCollection.find().toArray();
+                res.status(200).json({
+                    message: 'All Parcel',
+                    result
+                })
+            } catch (error) {
+                res.status(500).json({
+                    message: error.message
+                })
+            }
+        })
+
+        // add new parcel 
         app.post('/api/parcels', verifyToken, verifyAdmin, async (req, res) => {
             try {
                 const parcelData = req.body;
@@ -183,7 +199,7 @@ async function server() {
                     bookingDate: new Date()
                 })
 
-                 res.status(200).json({ message: 'Parcel created successfully', parcelId: result.insertedId })
+                res.status(200).json({ message: 'Parcel created successfully', parcelId: result.insertedId })
 
             } catch (error) {
                 res.status(500).json({
