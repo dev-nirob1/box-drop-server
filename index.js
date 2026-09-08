@@ -186,8 +186,44 @@ async function server() {
                 })
             }
         })
+        // admin overview of all parcels with status and count
+        // admin overview of all parcels
 
-        //ger parcel details using trackingId
+        app.get('/api/parcels/overview', verifyToken, verifyAdmin, async (req, res) => {
+            try {
+                const total = await parcelsCollection.countDocuments();
+
+                const booked = await parcelsCollection.countDocuments({
+                    status: "Booked"
+                });
+
+                const onTheWay = await parcelsCollection.countDocuments({
+                    status: "On the Way"
+                });
+
+                const delivered = await parcelsCollection.countDocuments({
+                    status: "Delivered"
+                });
+
+                res.status(200).json({
+                    message: "Parcel overview retrieved successfully",
+                    result: {
+                        total,
+                        booked,
+                        onTheWay,
+                        delivered
+                    }
+                });
+
+            } catch (error) {
+                console.error(error);
+
+                res.status(500).json({
+                    message: "Unable to retrieve parcel overview."
+                });
+            }
+        });
+
         // get parcel details using trackingId
 
         app.get('/api/parcels/:trackingId', verifyToken, verifyAdmin, async (req, res) => {
