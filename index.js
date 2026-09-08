@@ -35,7 +35,6 @@ async function server() {
         const usersCollection = db.collection('users');
         const parcelsCollection = db.collection('parcels');
 
-
         // verify token middleware 
         const verifyToken = (req, res, next) => {
             const token = req.cookies.token;
@@ -209,6 +208,31 @@ async function server() {
             } catch (error) {
                 console.error(error);
 
+                res.status(500).json({
+                    message: 'Unable to retrieve parcel details. Please try again later.'
+                });
+            }
+        });
+
+        // get parcel details using trackingId without authentication
+        app.get('/api/track/:trackingid', async (req, res) => {
+            try {
+                const trackingId = req.params.trackingid;
+                const data = {
+                    projection: { _id: 0, trackingId: 1, statusHistory: 1, status: 1, bookingDate: 1 }
+                }
+                const result = await parcelsCollection.findOne({ trackingId }, data);
+                if (!result) {
+                    return res.status(404).json({
+                        message: 'Parcel not found. Please check the tracking ID.'
+                    });
+                }
+                res.status(200).json({
+                    message: 'Parcel details retrieved successfully',
+                    result
+                });
+            } catch (error) {
+                console.error(error);
                 res.status(500).json({
                     message: 'Unable to retrieve parcel details. Please try again later.'
                 });
