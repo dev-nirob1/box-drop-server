@@ -188,6 +188,33 @@ async function server() {
             }
         })
 
+        //ger parcel details using trackingId
+        // get parcel details using trackingId
+
+        app.get('/api/parcels/:trackingId', verifyToken, verifyAdmin, async (req, res) => {
+            try {
+                const trackingId = req.params.trackingId;
+
+                const result = await parcelsCollection.findOne({ trackingId });
+                if (!result) {
+                    return res.status(404).json({
+                        message: 'Parcel not found. Please check the tracking ID.'
+                    });
+                }
+                res.status(200).json({
+                    message: 'Parcel details retrieved successfully',
+                    result
+                });
+
+            } catch (error) {
+                console.error(error);
+
+                res.status(500).json({
+                    message: 'Unable to retrieve parcel details. Please try again later.'
+                });
+            }
+        });
+
         // add new parcel 
         app.post('/api/parcels', verifyToken, verifyAdmin, async (req, res) => {
             try {
@@ -214,7 +241,7 @@ async function server() {
         })
 
         // update parcel status 
-        app.patch('/api/parcels/:trackingId', async (req, res) => {
+        app.patch('/api/parcels/:trackingId', verifyToken, verifyAdmin, async (req, res) => {
             try {
                 const trackingId = req.params.trackingId;
                 const { status } = req.body;
