@@ -186,7 +186,6 @@ async function server() {
                 })
             }
         })
-        // admin overview of all parcels with status and count
         // admin overview of all parcels
 
         app.get('/api/parcels/overview', verifyToken, verifyAdmin, async (req, res) => {
@@ -220,6 +219,28 @@ async function server() {
 
                 res.status(500).json({
                     message: "Unable to retrieve parcel overview."
+                });
+            }
+        });
+
+        // delete parcel using trackingId
+
+        app.delete('/api/parcels/:trackingId', verifyToken, verifyAdmin, async (req, res) => {
+            try {
+                const trackingId = req.params.trackingId;
+
+                const result = await parcelsCollection.deleteOne({ trackingId });
+
+                res.status(200).json({
+                    message: 'Parcel deleted successfully',
+                    result
+                });
+
+            } catch (error) {
+                console.error(error);
+
+                res.status(500).json({
+                    message: 'Unable to delete parcel.'
                 });
             }
         });
