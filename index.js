@@ -172,8 +172,6 @@ async function server() {
             });
         });
 
-
-
         // parcels route 
         // get all parcel 
         app.get('/api/parcels', verifyToken, verifyAdmin, async (req, res) => {
@@ -215,6 +213,31 @@ async function server() {
             }
         })
 
+        // update parcel status 
+        app.patch('/api/parcels/:trackingId', async (req, res) => {
+            try {
+                const trackingId = req.params.trackingId;
+                const { status } = req.body;
+                const updatedData = {
+                    $set: { status },
+                    $push: {
+                        statusHistory: {
+                            status,
+                            updatedAt: new Date(),
+                        },
+                    }
+                }
+                const result = await parcelsCollection.updateOne({ trackingId }, updatedData);
+
+                res.status(201).json({ message: 'Parcel status updated successfully', result })
+
+            } catch (error) {
+                res.status(500).json({
+                    message: "Failed to update parcel status"
+                })
+            }
+        })
+
         app.get('/', (req, res) => {
             res.send('Hello World')
         })
@@ -226,8 +249,6 @@ async function server() {
         app.listen(PORT, () => {
             console.log(`Server is running on http://localhost:${PORT}`);
         })
-
-
 
     } catch (error) {
         console.log(error.message);
