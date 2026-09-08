@@ -239,6 +239,32 @@ async function server() {
             }
         });
 
+        // get all parcels for a specific user
+        app.get('/api/user/parcels', verifyToken, async (req, res) => {
+            try {
+                const phone = req.user.phone;
+
+                const result = await parcelsCollection.find({
+                    $or: [
+                        { senderPhone: phone },
+                        { receiverPhone: phone }
+                    ]
+                }).toArray();
+
+                res.status(200).json({
+                    message: 'User parcels retrieved successfully',
+                    result
+                });
+
+            } catch (error) {
+                console.error(error);
+
+                res.status(500).json({
+                    message: 'Unable to retrieve user parcels.'
+                });
+            }
+        });
+
         // add new parcel 
         app.post('/api/parcels', verifyToken, verifyAdmin, async (req, res) => {
             try {
