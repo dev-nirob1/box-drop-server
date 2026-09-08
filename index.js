@@ -195,11 +195,18 @@ async function server() {
             try {
                 const parcelData = req.body;
                 const result = await parcelsCollection.insertOne({
-                    ...parcelData, trackingId: 'ORD-' + new ObjectId(), status: 'Booked',
+                    ...parcelData, trackingId: 'ORD-' + new ObjectId(),
+                    status: 'Booked',
+                    statusHistory: [
+                        {
+                            status: "Booked",
+                            date: new Date()
+                        }
+                    ],
                     bookingDate: new Date()
                 })
 
-                res.status(200).json({ message: 'Parcel created successfully', parcelId: result.insertedId })
+                res.status(201).json({ message: 'Parcel created successfully', parcelId: result.insertedId })
 
             } catch (error) {
                 res.status(500).json({
