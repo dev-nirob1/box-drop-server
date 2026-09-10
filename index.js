@@ -139,7 +139,7 @@ async function server() {
                 }
 
                 // generate jwt secret token
-                const token = jwt.sign({ userId: existingUser._id.toString(), phone: existingUser.phone, role: existingUser.role }, process.env.JWT_SECRET, { expiresIn: '1h' })
+                const token = jwt.sign({ userId: existingUser._id.toString(), phone: existingUser.phone, role: existingUser.role }, process.env.JWT_SECRET, { expiresIn: '1d' })
 
                 const userInfo = { name: existingUser.name, phone: existingUser.phone, role: existingUser.role, userId: existingUser._id.toString() };
 
@@ -224,7 +224,6 @@ async function server() {
         });
 
         // delete parcel using trackingId
-
         app.delete('/api/parcels/:trackingId', verifyToken, verifyAdmin, async (req, res) => {
             try {
                 const trackingId = req.params.trackingId;
@@ -246,7 +245,6 @@ async function server() {
         });
 
         // get parcel details using trackingId
-
         app.get('/api/parcels/:trackingId', verifyToken, verifyAdmin, async (req, res) => {
             try {
                 const trackingId = req.params.trackingId;
@@ -267,6 +265,39 @@ async function server() {
 
                 res.status(500).json({
                     message: 'Unable to retrieve parcel details. Please try again later.'
+                });
+            }
+        });
+        
+        app.get('/api/user/parcels/:trackingId', verifyToken, async (req, res) => {
+            try {
+                const trackingId = req.params.trackingId;
+                const phone = req.user.phone;
+
+                const result = await parcelsCollection.findOne({
+                    trackingId,
+                    $or: [
+                        { senderPhone: phone },
+                        { receiverPhone: phone }
+                    ]
+                });
+
+                if (!result) {
+                    return res.status(404).json({
+                        message: 'Parcel not found.'
+                    });
+                }
+
+                res.status(200).json({
+                    message: 'Parcel details retrieved successfully',
+                    result
+                });
+
+            } catch (error) {
+                console.error(error);
+
+                res.status(500).json({
+                    message: 'Unable to retrieve parcel details.'
                 });
             }
         });
